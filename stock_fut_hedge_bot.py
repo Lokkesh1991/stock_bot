@@ -14,6 +14,7 @@ import time
 # === Load .env ===
 load_dotenv()
 API_KEY = os.getenv("KITE_API_KEY")
+ACCESS_TOKEN = os.getenv("KITE_ACCESS_TOKEN")
 
 app = Flask(__name__)
 
@@ -36,10 +37,8 @@ def home():
 
 def get_kite_client():
     try:
-        with open("token.json") as f:
-            token_data = json.load(f)
         kite = KiteConnect(api_key=API_KEY)
-        kite.set_access_token(token_data["access_token"])
+        kite.set_access_token(ACCESS_TOKEN)
         return kite
     except Exception as e:
         logging.error(f"❌ Failed to initialize Kite client: {str(e)}")
@@ -130,56 +129,59 @@ def place_option_order(kite, symbol, lot_size, side="SELL", retries=3):
             time.sleep(5)
     return False
 
-def enter_position(kite, symbol, side):
-    lot_qty = get_lot_size(kite, symbol)
+def enter_position(kite, fut_symbol, side):
+    lot_qty = get_lot_size(kite, fut_symbol)
     txn = kite.TRANSACTION_TYPE_BUY if side == "LONG" else kite.TRANSACTION_TYPE_SELL
     kite.place_order(
         variety=kite.VARIETY_REGULAR,
         exchange="NFO",
-        tradingsymbol=symbol,
+        tradingsymbol=fut_symbol,
         transaction_type=txn,
         quantity=lot_qty,
         product="NRML",
         order_type="MARKET"
     )
-    logging.info(f"Entered {side} for {symbol}, qty={lot_qty}")
+    logging.info(f"Entered {side} for {fut_symbol}, qty={lot_qty}")
     log_data = {
-        "symbol": symbol,
+        "symbol": fut_symbol,
         "direction": side,
         "entry_time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         "qty": lot_qty
     }
-    with open(f"logs/{symbol}_trades.json", "a") as f:
+    with open(f"logs/{fut_symbol}_trades.json", "a") as f:
         f.write(json.dumps(log_data) + "\n")
 
-    # Hedge
-    fut_price = get_ltp(kite, symbol)
-    option_symbol, lot_size = find_nearest_option_strike(kite, symbol, fut_price, side)
-    if option_symbol and place_option_order(kite, option_symbol, lot_size, side="SELL"):
-        signals[symbol]["hedge_symbol"] = option_symbol
-        signals[symbol]["hedge_lot"] = lot_size
+    base_symbol = re.sub(r'[^A-Z]', '', fut_symbol.replace("FUT", ""))
+    if base_symbol not in signals:
+        signals[base_symbol] = {"hedge_symbol": None, "hedge_lot": 0, "3m": "", "5m": "", "10m": "", "last_action": "NONE"}
 
-def exit_position(kite, symbol, qty):
+    fut_price = get_ltp(kite, fut_symbol)
+    option_symbol, option_lot = find_nearest_option_strike(kite, base_symbol, fut_price, side)
+    if option_symbol and place_option_order(kite, option_symbol, option_lot, side="SELL"):
+        signals[base_symbol]["hedge_symbol"] = option_symbol
+        signals[base_symbol]["hedge_lot"] = option_lot
+
+def exit_position(kite, fut_symbol, qty):
     txn = KiteConnect.TRANSACTION_TYPE_SELL if qty > 0 else KiteConnect.TRANSACTION_TYPE_BUY
     kite.place_order(
         variety=kite.VARIETY_REGULAR,
         exchange="NFO",
-        tradingsymbol=symbol,
+        tradingsymbol=fut_symbol,
         transaction_type=txn,
         quantity=abs(qty),
         product="NRML",
         order_type="MARKET"
     )
-    logging.info(f"Exited position for {symbol}")
+    logging.info(f"Exited position for {fut_symbol}")
 
-    # Hedge exit
-    hedge_symbol = signals[symbol].get("hedge_symbol")
-    hedge_lot = signals[symbol].get("hedge_lot")
+    base_symbol = re.sub(r'[^A-Z]', '', fut_symbol.replace("FUT", ""))
+    hedge_symbol = signals[base_symbol].get("hedge_symbol")
+    hedge_lot = signals[base_symbol].get("hedge_lot")
     if hedge_symbol and hedge_lot:
         if place_option_order(kite, hedge_symbol, hedge_lot, side="BUY"):
             logging.info(f"Exited hedge {hedge_symbol}")
-        signals[symbol]["hedge_symbol"] = None
-        signals[symbol]["hedge_lot"] = 0
+        signals[base_symbol]["hedge_symbol"] = None
+        signals[base_symbol]["hedge_lot"] = 0
 
 def get_position_quantity(kite, symbol):
     try:
