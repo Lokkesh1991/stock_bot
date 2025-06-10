@@ -1,4 +1,4 @@
-print("\U0001F680 Starting tradingview_zerodha_ver5_with_hedge_exit...")
+print("🚀 Starting tradingview_zerodha_ver5_with_hedge_exit...")
 
 from flask import Flask, request, jsonify
 from kiteconnect import KiteConnect
@@ -74,7 +74,7 @@ def find_nearest_option_strike(kite, symbol, fut_price, direction):
         expiry = None
         option_type = "CE" if direction == "LONG" else "PE"
         target_price = round(fut_price * (1.03 if direction == "LONG" else 0.97))
-        symbol_upper = symbol.upper()
+        symbol_upper = re.sub(r'[^A-Z]', '', symbol.upper())
 
         for inst in instruments:
             if inst["segment"] == "NFO-OPT" and symbol_upper in inst["name"]:
@@ -84,7 +84,7 @@ def find_nearest_option_strike(kite, symbol, fut_price, direction):
         options = [
             i for i in instruments
             if i["instrument_type"] == option_type
-            and i["name"] == symbol_upper
+            and symbol_upper in i["name"]
             and i["expiry"] == expiry
         ]
 
