@@ -74,7 +74,10 @@ def find_nearest_option_strike(kite, symbol, fut_price, direction):
         expiry = None
         option_type = "CE" if direction == "LONG" else "PE"
         target_price = round(fut_price * (1.03 if direction == "LONG" else 0.97))
-        symbol_upper = re.sub(r'[^A-Z]', '', symbol.upper())
+
+        # Clean symbol to extract base name
+        symbol_upper = re.sub(r'(FUT|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|\d+)', '', symbol.upper())
+        symbol_upper = re.sub(r'[^A-Z]', '', symbol_upper)
 
         for inst in instruments:
             if inst["segment"] == "NFO-OPT" and symbol_upper in inst["name"]:
@@ -152,7 +155,8 @@ def enter_position(kite, fut_symbol, side):
     with open(f"logs/{fut_symbol}_trades.json", "a") as f:
         f.write(json.dumps(log_data) + "\n")
 
-    base_symbol = re.sub(r'[^A-Z]', '', fut_symbol.replace("FUT", ""))
+    base_symbol = re.sub(r'(FUT|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|\d+)', '', fut_symbol.upper())
+    base_symbol = re.sub(r'[^A-Z]', '', base_symbol)
     if base_symbol not in signals:
         signals[base_symbol] = {"hedge_symbol": None, "hedge_lot": 0, "3m": "", "5m": "", "10m": "", "last_action": "NONE"}
 
@@ -175,7 +179,8 @@ def exit_position(kite, fut_symbol, qty):
     )
     logging.info(f"Exited position for {fut_symbol}")
 
-    base_symbol = re.sub(r'[^A-Z]', '', fut_symbol.replace("FUT", ""))
+    base_symbol = re.sub(r'(FUT|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|\d+)', '', fut_symbol.upper())
+    base_symbol = re.sub(r'[^A-Z]', '', base_symbol)
     hedge_symbol = signals[base_symbol].get("hedge_symbol")
     hedge_lot = signals[base_symbol].get("hedge_lot")
     if hedge_symbol and hedge_lot:
