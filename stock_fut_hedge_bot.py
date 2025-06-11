@@ -14,7 +14,6 @@ import time
 # === Load .env ===
 load_dotenv()
 API_KEY = os.getenv("KITE_API_KEY")
-ACCESS_TOKEN = os.getenv("KITE_ACCESS_TOKEN")
 
 app = Flask(__name__)
 
@@ -37,8 +36,10 @@ def home():
 
 def get_kite_client():
     try:
+        with open("token.json") as f:
+            token_data = json.load(f)
         kite = KiteConnect(api_key=API_KEY)
-        kite.set_access_token(ACCESS_TOKEN)
+        kite.set_access_token(token_data["access_token"])
         return kite
     except Exception as e:
         logging.error(f"❌ Failed to initialize Kite client: {str(e)}")
@@ -256,4 +257,3 @@ def webhook():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
