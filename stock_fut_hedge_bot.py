@@ -75,7 +75,6 @@ def find_nearest_option_strike(kite, symbol, fut_price, direction):
         option_type = "CE" if direction == "LONG" else "PE"
         target_price = round(fut_price * (1.03 if direction == "LONG" else 0.97))
 
-        # Clean symbol to extract base name
         symbol_upper = re.sub(r'(FUT|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|\d+)', '', symbol.upper())
         symbol_upper = re.sub(r'[^A-Z]', '', symbol_upper)
 
@@ -158,7 +157,7 @@ def enter_position(kite, fut_symbol, side):
     base_symbol = re.sub(r'(FUT|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|\d+)', '', fut_symbol.upper())
     base_symbol = re.sub(r'[^A-Z]', '', base_symbol)
     if base_symbol not in signals:
-        signals[base_symbol] = {"hedge_symbol": None, "hedge_lot": 0, "3m": "", "5m": "", "10m": "", "last_action": "NONE"}
+        signals[base_symbol] = {"hedge_symbol": None, "hedge_lot": 0, "10m": "", "last_action": "NONE"}
 
     fut_price = get_ltp(kite, fut_symbol)
     option_symbol, option_lot = find_nearest_option_strike(kite, base_symbol, fut_price, side)
@@ -216,9 +215,9 @@ def get_active_contract(symbol):
         return f"{symbol}{str(current_year)[2:]}{datetime(current_year, current_month, 1).strftime('%b').upper()}FUT"
 
 def handle_trade_decision(kite, symbol, signals):
-    tf_signals = [signals[symbol].get(tf, "") for tf in ["3m", "5m", "10m"]]
-    if tf_signals[0] == tf_signals[1] == tf_signals[2] and tf_signals[0] in ["LONG", "SHORT"]:
-        new_signal = tf_signals[0]
+    signal_10m = signals[symbol].get("10m", "")
+    if signal_10m in ["LONG", "SHORT"]:
+        new_signal = signal_10m
         last_action = signals[symbol].get("last_action", "NONE")
         fut_symbol = get_active_contract(symbol)
         qty = get_position_quantity(kite, fut_symbol)
@@ -247,14 +246,18 @@ def webhook():
         cleaned_symbol = re.sub(r'[^A-Z]', '', raw_symbol.upper())
 
         if cleaned_symbol not in signals:
-            signals[cleaned_symbol] = {"3m": "", "5m": "", "10m": "", "last_action": "NONE", "hedge_symbol": None, "hedge_lot": 0}
+            signals[cleaned_symbol] = {"10m": "", "last_action": "NONE", "hedge_symbol": None, "hedge_lot": 0}
 
-        signals[cleaned_symbol][timeframe] = signal
-        kite = get_kite_client()
-        if kite:
-            handle_trade_decision(kite, cleaned_symbol, signals)
-            return jsonify({"status": "✅ processed"})
-        return jsonify({"status": "❌ kite failed"})
+        if timeframe == "10m":
+            signals[cleaned_symbol]["10m"] = signal
+            kite = get_kite_client()
+            if kite:
+                handle_trade_decision(kite, cleaned_symbol, signals)
+                return jsonify({"status": "✅ processed"})
+            return jsonify({"status": "❌ kite failed"})
+
+        return jsonify({"status": "⚠️ Ignored non-10m signal"})
+
     except Exception as e:
         logging.error(f"Exception: {e}")
         return jsonify({"status": "❌ error", "error": str(e)})
