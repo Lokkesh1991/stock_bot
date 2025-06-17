@@ -188,6 +188,20 @@ def exit_position(kite, fut_symbol, qty):
         signals[base_symbol]["hedge_symbol"] = None
         signals[base_symbol]["hedge_lot"] = 0
 
+def handle_trade_decision(kite, symbol, signals):
+    signal_10m = signals[symbol].get("10m", "")
+    if signal_10m in ["LONG", "SHORT"]:
+        new_signal = signal_10m
+        last_action = signals[symbol].get("last_action", "NONE")
+        fut_symbol = get_active_contract(symbol)
+        qty = get_position_quantity(kite, fut_symbol)
+
+        if new_signal != last_action:
+            if qty != 0:
+                exit_position(kite, fut_symbol, qty)
+            enter_position(kite, fut_symbol, new_signal)
+            signals[symbol]["last_action"] = new_signal
+
 def get_position_quantity(kite, symbol):
     try:
         positions = kite.positions()["net"]
@@ -213,20 +227,6 @@ def get_active_contract(symbol):
         return f"{symbol}{str(next_year)[2:]}{datetime(next_year, next_month, 1).strftime('%b').upper()}FUT"
     else:
         return f"{symbol}{str(current_year)[2:]}{datetime(current_year, current_month, 1).strftime('%b').upper()}FUT"
-
-def handle_trade_decision(kite, symbol, signals):
-    signal_10m = signals[symbol].get("10m", "")
-    if signal_10m in ["LONG", "SHORT"]:
-        new_signal = signal_10m
-        last_action = signals[symbol].get("last_action", "NONE")
-        fut_symbol = get_active_contract(symbol)
-        qty = get_position_quantity(kite, fut_symbol)
-
-        if new_signal != last_action:
-            if qty != 0:
-                exit_position(kite, fut_symbol, qty)
-            enter_position(kite, fut_symbol, new_signal)
-            signals[symbol]["last_action"] = new_signal
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
