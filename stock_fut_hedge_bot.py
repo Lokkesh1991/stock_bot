@@ -1,4 +1,4 @@
-print("\U0001F680 Starting tradingview_zerodha_ver5_without_hedge...")
+print("🚀 Starting tradingview_zerodha_ver5_without_hedge...")
 
 from flask import Flask, request, jsonify
 from kiteconnect import KiteConnect
@@ -172,5 +172,10 @@ def webhook():
         return jsonify({"status": "❌ error", "error": str(e)})
 
 if __name__ == "__main__":
+    print("📅 Start Time:", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    print("📂 Current Directory:", os.getcwd())
+    print("📁 Logs Path:", os.path.abspath("logs"))
+    print("✅ Flask app running at http://0.0.0.0:5000/webhook (or on Railway endpoint)")
+
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
