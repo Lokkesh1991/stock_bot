@@ -18,3 +18,120 @@
  * Running on http://127.0.0.1:5000
  * Running on http://192.168.29.185:5000
 2025-06-07 13:40:21,242 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-27 14:35:30,947 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-07-27 14:35:30,948 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-27 14:59:56,785 - INFO - 192.168.29.185 - - [27/Jul/2025 14:59:56] "GET / HTTP/1.1" 200 -
+2025-07-27 15:00:09,509 - INFO - 192.168.29.185 - - [27/Jul/2025 15:00:09] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-07-27 15:00:09,517 - INFO - 192.168.29.185 - - [27/Jul/2025 15:00:09] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-07-27 15:00:09,523 - INFO - 192.168.29.185 - - [27/Jul/2025 15:00:09] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-07-27 15:00:10,852 - INFO - 192.168.29.185 - - [27/Jul/2025 15:00:10] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-08-11 08:40:34,079 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-08-11 08:40:34,080 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-12 08:22:29,989 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-08-12 08:22:29,990 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 18:47:36,704 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-08-16 18:47:36,706 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-17 22:04:25,562 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-08-17 22:04:25,565 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-21 09:37:02,659 - INFO - 10.12.41.47 - - [21/Aug/2025 09:37:02] "GET / HTTP/1.1" 200 -
+2025-08-21 09:37:16,296 - INFO - 10.12.41.47 - - [21/Aug/2025 09:37:16] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-08-21 09:37:16,315 - INFO - 10.12.41.47 - - [21/Aug/2025 09:37:16] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-08-21 09:37:16,325 - INFO - 10.12.41.47 - - [21/Aug/2025 09:37:16] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-08-21 09:37:18,730 - INFO - 10.12.41.47 - - [21/Aug/2025 09:37:18] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-09-20 08:26:06,159 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-09-20 08:26:06,160 - INFO - [33mPress CTRL+C to quit[0m
+2025-09-20 08:41:04,347 - ERROR - Exception: 400 Bad Request: The browser (or proxy) sent a request that this server could not understand.
+2025-09-20 08:41:04,360 - INFO - 127.0.0.1 - - [20/Sep/2025 08:41:04] "POST /webhook HTTP/1.1" 200 -
+2025-09-20 08:43:19,489 - ERROR - Exception: 400 Bad Request: The browser (or proxy) sent a request that this server could not understand.
+2025-09-20 08:43:19,490 - INFO - 127.0.0.1 - - [20/Sep/2025 08:43:19] "POST /webhook HTTP/1.1" 200 -
+2025-09-20 08:45:24,090 - ERROR - Exception: Incorrect `api_key` or `access_token`.
+2025-09-20 08:45:24,093 - INFO - 127.0.0.1 - - [20/Sep/2025 08:45:24] "POST /webhook HTTP/1.1" 200 -
+2025-09-20 08:51:40,775 - ERROR - Exception: Incorrect `api_key` or `access_token`.
+2025-09-20 08:51:40,776 - INFO - 127.0.0.1 - - [20/Sep/2025 08:51:40] "POST /webhook HTTP/1.1" 200 -
+2025-09-20 08:54:54,131 - ERROR - Exception: Incorrect `api_key` or `access_token`.
+2025-09-20 08:54:54,132 - INFO - 127.0.0.1 - - [20/Sep/2025 08:54:54] "POST /webhook HTTP/1.1" 200 -
+2025-09-20 13:01:08,206 - INFO - 192.168.29.185 - - [20/Sep/2025 13:01:08] "GET / HTTP/1.1" 200 -
+2025-09-20 13:01:20,892 - INFO - 192.168.29.185 - - [20/Sep/2025 13:01:20] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-09-20 13:01:20,898 - INFO - 192.168.29.185 - - [20/Sep/2025 13:01:20] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-09-20 13:01:20,902 - INFO - 192.168.29.185 - - [20/Sep/2025 13:01:20] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-09-20 13:01:22,183 - INFO - 192.168.29.185 - - [20/Sep/2025 13:01:22] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-09-22 16:45:59,497 - INFO - 192.168.29.185 - - [22/Sep/2025 16:45:59] "GET / HTTP/1.1" 200 -
+2025-09-22 16:46:12,455 - INFO - 192.168.29.185 - - [22/Sep/2025 16:46:12] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-09-22 16:46:12,467 - INFO - 192.168.29.185 - - [22/Sep/2025 16:46:12] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-09-22 16:46:12,475 - INFO - 192.168.29.185 - - [22/Sep/2025 16:46:12] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-09-22 16:46:13,785 - INFO - 192.168.29.185 - - [22/Sep/2025 16:46:13] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-09-23 16:46:24,815 - INFO - 192.168.29.185 - - [23/Sep/2025 16:46:24] "GET / HTTP/1.1" 200 -
+2025-09-23 16:46:37,822 - INFO - 192.168.29.185 - - [23/Sep/2025 16:46:37] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-09-23 16:46:37,834 - INFO - 192.168.29.185 - - [23/Sep/2025 16:46:37] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-09-23 16:46:37,843 - INFO - 192.168.29.185 - - [23/Sep/2025 16:46:37] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-09-23 16:46:39,415 - INFO - 192.168.29.185 - - [23/Sep/2025 16:46:39] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-09-24 16:47:33,072 - INFO - 192.168.29.185 - - [24/Sep/2025 16:47:33] "GET / HTTP/1.1" 200 -
+2025-09-24 16:47:52,023 - INFO - 192.168.29.185 - - [24/Sep/2025 16:47:52] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-09-24 16:47:52,034 - INFO - 192.168.29.185 - - [24/Sep/2025 16:47:52] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-09-24 16:47:52,053 - INFO - 192.168.29.185 - - [24/Sep/2025 16:47:52] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-09-24 16:47:53,347 - INFO - 192.168.29.185 - - [24/Sep/2025 16:47:53] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-10-03 04:56:23,070 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-10-03 04:56:23,072 - INFO - [33mPress CTRL+C to quit[0m
+2025-10-03 05:02:47,641 - ERROR - Exception: 400 Bad Request: The browser (or proxy) sent a request that this server could not understand.
+2025-10-03 05:02:47,644 - INFO - 127.0.0.1 - - [03/Oct/2025 05:02:47] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 05:05:22,153 - ERROR - Exception: Incorrect `api_key` or `access_token`.
+2025-10-03 05:05:22,155 - INFO - 127.0.0.1 - - [03/Oct/2025 05:05:22] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 05:28:10,358 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-10-03 05:28:10,358 - INFO - [33mPress CTRL+C to quit[0m
+2025-10-03 05:29:08,250 - ERROR - Exception: 400 Bad Request: The browser (or proxy) sent a request that this server could not understand.
+2025-10-03 05:29:08,254 - INFO - 127.0.0.1 - - [03/Oct/2025 05:29:08] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 05:33:18,799 - ERROR - Exception: Incorrect `api_key` or `access_token`.
+2025-10-03 05:33:18,802 - INFO - 127.0.0.1 - - [03/Oct/2025 05:33:18] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 05:35:40,923 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-10-03 05:35:40,923 - INFO - [33mPress CTRL+C to quit[0m
+2025-10-03 05:36:16,500 - ERROR - Exception: Incorrect `api_key` or `access_token`.
+2025-10-03 05:36:16,502 - INFO - 127.0.0.1 - - [03/Oct/2025 05:36:16] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 05:36:46,861 - ERROR - Exception: Incorrect `api_key` or `access_token`.
+2025-10-03 05:36:46,863 - INFO - 127.0.0.1 - - [03/Oct/2025 05:36:46] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 05:40:59,910 - ERROR - Exception: 400 Bad Request: The browser (or proxy) sent a request that this server could not understand.
+2025-10-03 05:40:59,913 - INFO - 127.0.0.1 - - [03/Oct/2025 05:40:59] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 05:41:29,913 - ERROR - Exception: Your order could not be converted to a After Market Order (AMO).
+2025-10-03 05:41:29,914 - INFO - 127.0.0.1 - - [03/Oct/2025 05:41:29] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 07:44:47,959 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-10-03 07:44:47,960 - INFO - [33mPress CTRL+C to quit[0m
+2025-10-03 07:46:36,813 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-10-03 07:46:36,814 - INFO - [33mPress CTRL+C to quit[0m
+2025-10-03 07:48:14,039 - ERROR - Exception: 415 Unsupported Media Type: Did not attempt to load JSON data because the request Content-Type was not 'application/json'.
+2025-10-03 07:48:14,044 - INFO - 127.0.0.1 - - [03/Oct/2025 07:48:14] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 07:49:15,740 - INFO - 127.0.0.1 - - [03/Oct/2025 07:49:15] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 07:49:32,451 - INFO - 127.0.0.1 - - [03/Oct/2025 07:49:32] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 07:49:39,363 - ERROR - Exception: 415 Unsupported Media Type: Did not attempt to load JSON data because the request Content-Type was not 'application/json'.
+2025-10-03 07:49:39,364 - INFO - 127.0.0.1 - - [03/Oct/2025 07:49:39] "POST /webhook HTTP/1.1" 200 -
