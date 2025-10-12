@@ -135,3 +135,204 @@
 2025-10-03 07:49:32,451 - INFO - 127.0.0.1 - - [03/Oct/2025 07:49:32] "POST /webhook HTTP/1.1" 200 -
 2025-10-03 07:49:39,363 - ERROR - Exception: 415 Unsupported Media Type: Did not attempt to load JSON data because the request Content-Type was not 'application/json'.
 2025-10-03 07:49:39,364 - INFO - 127.0.0.1 - - [03/Oct/2025 07:49:39] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 07:50:20,189 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-10-03 07:50:20,189 - INFO - [33mPress CTRL+C to quit[0m
+2025-10-03 07:51:12,764 - ERROR - webhook error
+Traceback (most recent call last):
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 236, in webhook
+    handle_trade_decision(kite, base_key, exchange, fut_symbol, signal)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 191, in handle_trade_decision
+    enter_position(kite, exchange, fut_symbol, new_signal)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 140, in enter_position
+    kite.place_order(
+    ~~~~~~~~~~~~~~~~^
+        variety=kite.VARIETY_REGULAR,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        order_type=kite.ORDER_TYPE_MARKET
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 361, in place_order
+    return self._post("order.place",
+           ~~~~~~~~~~^^^^^^^^^^^^^^^
+                      url_args={"variety": variety},
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      params=params)["order_id"]
+                      ^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 865, in _post
+    return self._request(route, "POST", url_args=url_args, params=params, is_json=is_json, query_params=query_params)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 937, in _request
+    raise exp(data["message"], code=r.status_code)
+kiteconnect.exceptions.TokenException: Incorrect `api_key` or `access_token`.
+2025-10-03 07:51:12,771 - INFO - 127.0.0.1 - - [03/Oct/2025 07:51:12] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 07:54:02,602 - ERROR - webhook error
+Traceback (most recent call last):
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 236, in webhook
+    handle_trade_decision(kite, base_key, exchange, fut_symbol, signal)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 191, in handle_trade_decision
+    enter_position(kite, exchange, fut_symbol, new_signal)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 140, in enter_position
+    kite.place_order(
+    ~~~~~~~~~~~~~~~~^
+        variety=kite.VARIETY_REGULAR,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        order_type=kite.ORDER_TYPE_MARKET
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 361, in place_order
+    return self._post("order.place",
+           ~~~~~~~~~~^^^^^^^^^^^^^^^
+                      url_args={"variety": variety},
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      params=params)["order_id"]
+                      ^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 865, in _post
+    return self._request(route, "POST", url_args=url_args, params=params, is_json=is_json, query_params=query_params)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 937, in _request
+    raise exp(data["message"], code=r.status_code)
+kiteconnect.exceptions.InputException: Your order could not be converted to a After Market Order (AMO).
+2025-10-03 07:54:02,605 - INFO - 127.0.0.1 - - [03/Oct/2025 07:54:02] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 07:55:18,263 - ERROR - webhook error
+Traceback (most recent call last):
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 198, in webhook
+    data = request.json or {}
+           ^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\werkzeug\wrappers\request.py", line 560, in json
+    return self.get_json()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\werkzeug\wrappers\request.py", line 604, in get_json
+    return self.on_json_loading_failed(None)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\flask\wrappers.py", line 214, in on_json_loading_failed
+    return super().on_json_loading_failed(e)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\werkzeug\wrappers\request.py", line 647, in on_json_loading_failed
+    raise UnsupportedMediaType(
+    ...<2 lines>...
+    )
+werkzeug.exceptions.UnsupportedMediaType: 415 Unsupported Media Type: Did not attempt to load JSON data because the request Content-Type was not 'application/json'.
+2025-10-03 07:55:18,293 - INFO - 127.0.0.1 - - [03/Oct/2025 07:55:18] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 07:57:30,229 - ERROR - webhook error
+Traceback (most recent call last):
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 236, in webhook
+    handle_trade_decision(kite, base_key, exchange, fut_symbol, signal)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 191, in handle_trade_decision
+    enter_position(kite, exchange, fut_symbol, new_signal)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 140, in enter_position
+    kite.place_order(
+    ~~~~~~~~~~~~~~~~^
+        variety=kite.VARIETY_REGULAR,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        order_type=kite.ORDER_TYPE_MARKET
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 361, in place_order
+    return self._post("order.place",
+           ~~~~~~~~~~^^^^^^^^^^^^^^^
+                      url_args={"variety": variety},
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      params=params)["order_id"]
+                      ^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 865, in _post
+    return self._request(route, "POST", url_args=url_args, params=params, is_json=is_json, query_params=query_params)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 937, in _request
+    raise exp(data["message"], code=r.status_code)
+kiteconnect.exceptions.InputException: Your order could not be converted to a After Market Order (AMO).
+2025-10-03 07:57:30,232 - INFO - 127.0.0.1 - - [03/Oct/2025 07:57:30] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 07:58:07,429 - ERROR - webhook error
+Traceback (most recent call last):
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 236, in webhook
+    handle_trade_decision(kite, base_key, exchange, fut_symbol, signal)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 191, in handle_trade_decision
+    enter_position(kite, exchange, fut_symbol, new_signal)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\Desktop\Algo_Trading\stock_bot\stock_fut_hedge_bot.py", line 140, in enter_position
+    kite.place_order(
+    ~~~~~~~~~~~~~~~~^
+        variety=kite.VARIETY_REGULAR,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        order_type=kite.ORDER_TYPE_MARKET
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 361, in place_order
+    return self._post("order.place",
+           ~~~~~~~~~~^^^^^^^^^^^^^^^
+                      url_args={"variety": variety},
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      params=params)["order_id"]
+                      ^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 865, in _post
+    return self._request(route, "POST", url_args=url_args, params=params, is_json=is_json, query_params=query_params)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lokkesh Kumar\AppData\Roaming\Python\Python313\site-packages\kiteconnect\connect.py", line 937, in _request
+    raise exp(data["message"], code=r.status_code)
+kiteconnect.exceptions.InputException: Your order could not be converted to a After Market Order (AMO).
+2025-10-03 07:58:07,432 - INFO - 127.0.0.1 - - [03/Oct/2025 07:58:07] "POST /webhook HTTP/1.1" 200 -
+2025-10-03 09:20:28,163 - INFO - 10.189.124.47 - - [03/Oct/2025 09:20:28] "GET / HTTP/1.1" 200 -
+2025-10-03 09:20:41,181 - INFO - 10.189.124.47 - - [03/Oct/2025 09:20:41] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-10-03 09:20:41,205 - INFO - 10.189.124.47 - - [03/Oct/2025 09:20:41] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-10-03 09:20:41,215 - INFO - 10.189.124.47 - - [03/Oct/2025 09:20:41] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-10-03 09:20:46,148 - INFO - 10.189.124.47 - - [03/Oct/2025 09:20:46] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-10-05 15:13:15,609 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.185:5000
+2025-10-05 15:13:15,618 - INFO - [33mPress CTRL+C to quit[0m
+2025-10-06 19:35:55,358 - INFO - 192.168.29.185 - - [06/Oct/2025 19:35:55] "GET / HTTP/1.1" 200 -
+2025-10-06 19:36:12,951 - INFO - 192.168.29.185 - - [06/Oct/2025 19:36:12] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-10-06 19:36:12,958 - INFO - 192.168.29.185 - - [06/Oct/2025 19:36:12] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-10-06 19:36:12,964 - INFO - 192.168.29.185 - - [06/Oct/2025 19:36:12] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-10-06 19:36:14,235 - INFO - 192.168.29.185 - - [06/Oct/2025 19:36:14] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-10-07 19:42:23,216 - INFO - 192.168.29.185 - - [07/Oct/2025 19:42:23] "GET / HTTP/1.1" 200 -
+2025-10-07 19:42:40,792 - INFO - 192.168.29.185 - - [07/Oct/2025 19:42:40] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-10-07 19:42:40,803 - INFO - 192.168.29.185 - - [07/Oct/2025 19:42:40] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-10-07 19:42:40,851 - INFO - 192.168.29.185 - - [07/Oct/2025 19:42:40] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-10-07 19:42:42,125 - INFO - 192.168.29.185 - - [07/Oct/2025 19:42:42] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-10-08 19:50:45,574 - INFO - 192.168.29.185 - - [08/Oct/2025 19:50:45] "GET / HTTP/1.1" 200 -
+2025-10-08 19:51:04,308 - INFO - 192.168.29.185 - - [08/Oct/2025 19:51:04] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-10-08 19:51:04,317 - INFO - 192.168.29.185 - - [08/Oct/2025 19:51:04] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-10-08 19:51:04,323 - INFO - 192.168.29.185 - - [08/Oct/2025 19:51:04] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-10-08 19:51:05,897 - INFO - 192.168.29.185 - - [08/Oct/2025 19:51:05] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-10-08 19:51:05,906 - INFO - 192.168.29.185 - - [08/Oct/2025 19:51:05] "[33mPOST /boaform/admin/formTracert HTTP/1.1[0m" 404 -
+2025-10-09 18:12:05,099 - INFO - 192.168.29.185 - - [09/Oct/2025 18:12:05] "GET / HTTP/1.1" 200 -
+2025-10-09 18:12:18,882 - INFO - 192.168.29.185 - - [09/Oct/2025 18:12:18] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-10-09 18:12:18,892 - INFO - 192.168.29.185 - - [09/Oct/2025 18:12:18] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-10-09 18:12:18,900 - INFO - 192.168.29.185 - - [09/Oct/2025 18:12:18] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-10-09 18:12:20,457 - INFO - 192.168.29.185 - - [09/Oct/2025 18:12:20] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-10-09 19:53:12,125 - INFO - 192.168.29.185 - - [09/Oct/2025 19:53:12] "GET / HTTP/1.1" 200 -
+2025-10-09 19:53:29,829 - INFO - 192.168.29.185 - - [09/Oct/2025 19:53:29] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-10-09 19:53:29,839 - INFO - 192.168.29.185 - - [09/Oct/2025 19:53:29] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-10-09 19:53:29,850 - INFO - 192.168.29.185 - - [09/Oct/2025 19:53:29] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-10-09 19:53:31,155 - INFO - 192.168.29.185 - - [09/Oct/2025 19:53:31] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-10-09 19:53:31,179 - INFO - 192.168.29.185 - - [09/Oct/2025 19:53:31] "[33mPOST /boaform/formTracert HTTP/1.1[0m" 404 -
+2025-10-10 19:56:07,791 - INFO - 192.168.29.185 - - [10/Oct/2025 19:56:07] "GET / HTTP/1.1" 200 -
+2025-10-10 19:56:25,786 - INFO - 192.168.29.185 - - [10/Oct/2025 19:56:25] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-10-10 19:56:25,794 - INFO - 192.168.29.185 - - [10/Oct/2025 19:56:25] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-10-10 19:56:25,799 - INFO - 192.168.29.185 - - [10/Oct/2025 19:56:25] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-10-10 19:56:27,084 - INFO - 192.168.29.185 - - [10/Oct/2025 19:56:27] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -
+2025-10-10 19:56:27,090 - INFO - 192.168.29.185 - - [10/Oct/2025 19:56:27] "[33mGET /boaform/admin/formPing/diag_ping.asp HTTP/1.1[0m" 404 -
+2025-10-11 20:10:34,785 - INFO - 192.168.29.185 - - [11/Oct/2025 20:10:34] "GET / HTTP/1.1" 200 -
+2025-10-11 20:10:47,546 - INFO - 192.168.29.185 - - [11/Oct/2025 20:10:47] "[31m[1mGET / HTTP/1.1[0m" 400 -
+2025-10-11 20:10:47,559 - INFO - 192.168.29.185 - - [11/Oct/2025 20:10:47] "[33mGET /loginMsg.js HTTP/1.1[0m" 404 -
+2025-10-11 20:10:47,564 - INFO - 192.168.29.185 - - [11/Oct/2025 20:10:47] "[33mGET /cgi/get.cgi?cmd=home_login HTTP/1.1[0m" 404 -
+2025-10-11 20:10:49,258 - INFO - 192.168.29.185 - - [11/Oct/2025 20:10:49] "[33mGET /rootDesc.xml HTTP/1.1[0m" 404 -

@@ -28,8 +28,44 @@ logging.basicConfig(
 )
 
 # ---------------- Config ----------------
-ALLOWED_TF = {"5m", "10m", "15m"}  # accept 5m/10m/15m alerts
-COMMODITY_ROOTS = {"NATGASMINI", "NATURALGAS", "COPPER", "GOLDM"}  # MCX
+# Accept 5m, 10m, 15m, 30m, 60m (1h normalized to 60m)
+ALLOWED_TF = {"5m", "10m", "15m", "30m", "60m"}
+
+# Canonical Zerodha FUT roots for MCX (incl. minis)
+MCX_CANONICAL_ROOTS = {
+    "CRUDEOIL", "CRUDEOILM",  # Crudeoil full & mini
+    "SILVER", "SILVERM",      # Silver full & mini
+    "COPPER", "COPPERM",      # Copper full & mini
+    "NATURALGAS", "NATGASMINI",
+    "ZINC", "ZINCMINI",
+    "GOLD", "GOLDM"
+}
+
+# Map common raw/TV aliases → Zerodha canonical futures roots
+# (Add more if you encounter variants in TV symbols)
+ALIAS_TO_CANON = {
+    "CRUDEOIL": "CRUDEOIL",
+    "CRUDEOILM": "CRUDEOILM",
+    "CRUDE": "CRUDEOIL",
+    "OIL": "CRUDEOIL",
+
+    "SILVER": "SILVER",
+    "SILVERM": "SILVERM",
+
+    "COPPER": "COPPER",
+    "COPPERM": "COPPERM",
+
+    "NATURALGAS": "NATURALGAS",
+    "NATGAS": "NATURALGAS",
+    "NATGASMINI": "NATGASMINI",
+    "NG": "NATURALGAS",
+
+    "ZINC": "ZINC",
+    "ZINCMINI": "ZINCMINI",
+
+    "GOLD": "GOLD",
+    "GOLDM": "GOLDM"
+}
 
 signals = {}
 lot_size_cache = {}
@@ -49,26 +85,55 @@ def get_kite_client():
         logging.error(f"❌ Failed to initialize Kite client: {str(e)}")
         return None
 
-# ---------- Helpers: symbol parsing & instrument lookup ----------
+# ---------- Helpers: timeframe, symbol parsing & instrument lookup ----------
+def normalize_timeframe(tf_in: str) -> str:
+    """
+    Normalize inputs like '15 m', '30min', '1h', '60' → '15m'/'30m'/'60m'
+    """
+    s = (tf_in or "").strip().lower()
+    s = s.replace("minutes", "m").replace("minute", "m").replace("mins", "m").replace("min", "m")
+    s = s.replace(" ", "")
+    # Handle pure numbers like '60'
+    if re.fullmatch(r"\d+", s):
+        s = f"{s}m"
+    # Handle hours like '1h'/'2h' → minutes
+    m = re.fullmatch(r"(\d+)h", s)
+    if m:
+        minutes = int(m.group(1)) * 60
+        s = f"{minutes}m"
+    # Ensure trailing 'm'
+    if not s.endswith("m"):
+        s += "m"
+    # Standardize 1h to 60m
+    if s == "1m0m":  # Just in case weird merges
+        s = "10m"
+    if s == "60m":   # explicit
+        return "60m"
+    return s
+
 def parse_tv_symbol(raw_symbol: str) -> str:
     """
-    Turn TradingView symbol like 'MCX:NATGASMINI1!' or 'NSE:BHEL' into a clean root: 'NATGASMINI' / 'BHEL'
+    Turn TradingView symbol like 'MCX:NATGASMINI1!' or 'NSE:BHEL' into a clean root,
+    then map via alias table to Zerodha canonical futures root or equity root.
     """
     s = (raw_symbol or "").strip().upper()
     if ":" in s:
         _, s = s.split(":", 1)  # drop exchange prefix
     # remove timeframe/suffixes like '1!' and any non-letters
     s = re.sub(r'[^A-Z]', '', s)
-    return s
+
+    # Look up alias to canonical if possible
+    if s in ALIAS_TO_CANON:
+        return ALIAS_TO_CANON[s]
+    return s  # equities like BHEL, TCS, etc.
 
 def resolve_exchange(root: str) -> str:
     """
-    If it's one of your commodities → MCX, else assume equity futures → NFO
+    If canonicalized root is an MCX commodity → MCX, else assume equity futures → NFO
     """
-    return "MCX" if root in COMMODITY_ROOTS else "NFO"
+    return "MCX" if root in MCX_CANONICAL_ROOTS else "NFO"
 
 def load_instruments(kite, exchange: str):
-    # cache key per exchange would be fine; simple direct call is okay too
     return kite.instruments(exchange)
 
 def expiry_date(i):
@@ -86,17 +151,16 @@ def find_nearest_future(kite, exchange: str, root: str):
         instr = load_instruments(kite, exchange)
         today = datetime.now().date()
 
-        # Filter futures for this root. Zerodha uses 'tradingsymbol' pattern like ROOTYYMONFUT.
-        # We'll match startswith(root) and endswith('FUT')
+        # Zerodha FUT 'tradingsymbol' pattern usually: ROOTYYMONFUT (e.g., CRUDEOIL29OCTFUT)
         cands = [x for x in instr
                  if x.get("instrument_type") == "FUT"
-                 and x.get("tradingsymbol","").startswith(root)
-                 and x.get("tradingsymbol","").endswith("FUT")]
+                 and x.get("tradingsymbol", "").startswith(root)
+                 and x.get("tradingsymbol", "").endswith("FUT")]
 
         # Prefer not-yet-expired, then nearest expiry
         future = [x for x in cands if expiry_date(x) and expiry_date(x) >= today]
         if not future:
-            future = cands  # fallback
+            future = cands  # fallback if API has no expiry or all past
 
         future.sort(key=lambda x: expiry_date(x) or today)
         return future[0] if future else None
@@ -198,32 +262,34 @@ def webhook():
         data = request.json or {}
         raw_symbol   = data.get("symbol", "")
         signal_in    = (data.get("signal", "") or "").upper()
-        timeframe_in = (data.get("timeframe", "") or "").lower()
+        timeframe_in = (data.get("timeframe", "") or "")
 
         # Normalize signal
-        if signal_in == "BUY":  signal = "LONG"
-        elif signal_in == "SELL": signal = "SHORT"
-        else: signal = signal_in
+        if signal_in == "BUY":
+            signal = "LONG"
+        elif signal_in == "SELL":
+            signal = "SHORT"
+        else:
+            signal = signal_in
 
-        if signal not in {"LONG","SHORT"}:
-            return jsonify({"status":"⚠️ ignored - bad signal", "got": signal_in})
+        if signal not in {"LONG", "SHORT"}:
+            return jsonify({"status": "⚠️ ignored - bad signal", "got": signal_in})
 
-        # Normalize timeframe to Xm
-        tf = timeframe_in.replace("minutes","m").replace("min","m")
-        if not tf.endswith("m"):
-            tf += "m"
-
+        # Normalize timeframe to 'Xm' set
+        tf = normalize_timeframe(timeframe_in)
+        if tf == "1h":
+            tf = "60m"
         if tf not in ALLOWED_TF:
             return jsonify({"status": f"⚠️ Ignored timeframe {tf}. Allowed: {sorted(ALLOWED_TF)}"})
 
         base_key = parse_tv_symbol(raw_symbol)  # used as key for state
         kite = get_kite_client()
         if not kite:
-            return jsonify({"status":"❌ kite failed"})
+            return jsonify({"status": "❌ kite failed"})
 
         exchange, fut_symbol = get_active_contract(kite, raw_symbol)
         if not exchange or not fut_symbol:
-            return jsonify({"status":"❌ could not resolve active future", "raw_symbol": raw_symbol})
+            return jsonify({"status": "❌ could not resolve active future", "raw_symbol": raw_symbol})
 
         # init state
         if base_key not in signals:
@@ -235,11 +301,11 @@ def webhook():
         # Act directly on this timeframe's signal
         handle_trade_decision(kite, base_key, exchange, fut_symbol, signal)
 
-        return jsonify({"status":"✅ processed", "exchange": exchange, "fut": fut_symbol, "signal": signal, "tf": tf})
+        return jsonify({"status": "✅ processed", "exchange": exchange, "fut": fut_symbol, "signal": signal, "tf": tf})
 
     except Exception as e:
         logging.exception("webhook error")
-        return jsonify({"status":"❌ error", "error": str(e)})
+        return jsonify({"status": "❌ error", "error": str(e)})
 
 # ---------- Main ----------
 if __name__ == "__main__":
