@@ -1,4 +1,4 @@
-print("🚀 Starting tradingview_zerodha_ver5_without_hedge — NATGASMINI-Only Mode with debug + tolerant expiry + 4-day rollover...")
+print("🚀 Starting tradingview_zerodha_ver5_without_hedge — NATGASMINI-Only Mode (simple 20th→next-month rule)")
 
 from flask import Flask, request, jsonify
 from kiteconnect import KiteConnect
@@ -6,7 +6,7 @@ import logging
 import os
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, date
 from dotenv import load_dotenv
 import re
 import time
@@ -31,14 +31,21 @@ logging.basicConfig(
 # Config
 # --------------------------------------------------------------------
 ALLOWED_TF = {"5m", "10m", "15m", "20m", "30m", "60m"}
-ROLLOVER_DAYS = 4  # rollover to next month when front-month DTE <= 4
 
 signals = {}
 lot_size_cache = {}
 
+MONTH3_TO_NUM = {
+    "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+    "JUL": 7, "AUG": 8, "SEP": 9, "OCT":10, "NOV":11, "DEC":12
+}
+
+# --------------------------------------------------------------------
+# Flask root
+# --------------------------------------------------------------------
 @app.route("/")
 def home():
-    return "✅ Botelyes Webhook — NATGASMINI-Only Mode with 4-day rollover + debug is Running!"
+    return "✅ Botelyes Webhook — NATGASMINI-Only Mode (20th→next-month) is Running!"
 
 # --------------------------------------------------------------------
 # Kite client
@@ -59,23 +66,21 @@ def get_kite_client():
 # --------------------------------------------------------------------
 def normalize_timeframe(tf_in: str) -> str:
     s = (tf_in or "").strip().lower()
-    s = s.replace("minutes", "m").replace("minute", "m").replace("mins", "m").replace("min", "m")
-    s = s.replace(" ", "")
+    s = s.replace("minutes","m").replace("minute","m").replace("mins","m").replace("min","m")
+    s = s.replace(" ","")
     if re.fullmatch(r"\d+", s):
         s = f"{s}m"
     m = re.fullmatch(r"(\d+)h", s)
     if m:
-        s = f"{int(m.group(1)) * 60}m"
+        s = f"{int(m.group(1))*60}m"
     if not s.endswith("m"):
         s += "m"
-    if s == "1m0m":
-        s = "10m"
-    if s == "60m":
-        return "60m"
+    if s == "1m0m": s = "10m"
+    if s == "60m": return "60m"
     return s
 
 def load_instruments(kite, exchange: str):
-    """Fetch instruments with simple retries; log if empty."""
+    """Fetch instruments with a couple of retries."""
     last_err = None
     for i in range(3):
         try:
@@ -90,142 +95,87 @@ def load_instruments(kite, exchange: str):
     logging.error(f"❌ instruments({exchange}) failed/empty after retries: {last_err}")
     return []
 
-def expiry_date(i):
-    try:
-        return datetime.strptime(i["expiry"], "%Y-%m-%d").date()
-    except Exception:
-        return None
-
-def gas_futures_visible(kite):
-    """Return ALL NATGASMINI futures on MCX (for debug + matching)."""
+def parse_natgasmini_contracts(kite):
+    """
+    Return list of dicts with (tsym, y, m) for all MCX NATGASMINI futures, e.g.:
+    NATGASMINI25NOVFUT -> y=2025, m=11
+    """
     instr = load_instruments(kite, "MCX")
-    minis = [x for x in instr
-             if x.get("instrument_type") == "FUT"
-             and (x.get("tradingsymbol") or "").startswith("NATGASMINI")
-             and (x.get("tradingsymbol") or "").endswith("FUT")]
-    # Helpful snapshot
-    also_gas = [x.get("tradingsymbol") for x in instr
-                if x.get("instrument_type") == "FUT"
-                and "NATGAS" in (x.get("tradingsymbol") or "")]
-    logging.info(f"🧪 MCX GAS-like FUT visible: {also_gas[:20]}")
-    return minis
-
-def sort_by_expiry_or_symbol(futs):
-    """
-    Try to sort by expiry; if none have a valid expiry, fall back to
-    sorting by tradingsymbol (which is chronological for MCX FUTs).
-    """
-    with_exp = []
-    no_exp = []
-    for x in futs:
-        ed = expiry_date(x)
-        if ed:
-            with_exp.append((ed, x))
-        else:
-            no_exp.append(x)
-
-    if with_exp:
-        with_exp.sort(key=lambda t: t[0])            # by expiry asc
-        ordered = [x for _, x in with_exp] + no_exp  # any no-exp at the end
-        return ordered
-
-    # Fallback: sort by symbol, e.g. NATGASMINI25OCTFUT < NATGASMINI25NOVFUT < ...
-    return sorted(no_exp, key=lambda x: x.get("tradingsymbol", ""))
-
-def find_current_and_next_natgasmini(kite):
-    """
-    Return (current_front, next_month) NATGASMINI FUTs as dicts.
-    Tolerant to missing expiry: falls back to symbol sort.
-    """
-    minis = gas_futures_visible(kite)
-    if not minis:
-        return (None, None)
-
-    ordered = sort_by_expiry_or_symbol(minis)
-    today = datetime.now().date()
-
-    live = []
-    for x in ordered:
-        ed = expiry_date(x)
-        if ed is None or ed >= today:
-            live.append(x)
-
-    if not live:
-        live = ordered  # still use ordered list
-
-    cur = live[0]
-    nxt = live[1] if len(live) > 1 else None
-    return cur, nxt
-
-def days_to_expiry_for_symbol(kite, exchange: str, tradingsymbol: str):
-    instr = load_instruments(kite, exchange)
+    futs = []
     for x in instr:
-        if x.get("tradingsymbol") == tradingsymbol:
-            ed = expiry_date(x)
-            if not ed:
-                return None
-            return max(0, (ed - datetime.now().date()).days)
-    return None
+        ts = x.get("tradingsymbol", "")
+        if x.get("instrument_type") == "FUT" and ts.startswith("NATGASMINI") and ts.endswith("FUT"):
+            # Pattern: NATGASMINI25NOVFUT / NATGASMINI26JANFUT
+            m = re.search(r"NATGASMINI(?P<yy>\d{2})(?P<mon>[A-Z]{3})FUT", ts)
+            if not m:
+                continue
+            yy = int(m.group("yy"))
+            mon3 = m.group("mon")
+            mon = MONTH3_TO_NUM.get(mon3, 0)
+            if mon == 0:
+                continue
+            year = 2000 + yy
+            futs.append({"tradingsymbol": ts, "year": year, "month": mon})
+    if not futs:
+        logging.error("❌ No NATGASMINI FUTs parsed from instruments.")
+    else:
+        logging.info(f"🧪 NATGASMINI FUTs visible: {[f['tradingsymbol'] for f in futs]}")
+    return futs
 
-def maybe_rollover_existing(kite, exchange: str, cur_symbol: str):
+def choose_contract_by_day20_rule(futs):
     """
-    If we already hold a position in cur_symbol and it expires in <= ROLLOVER_DAYS,
-    close it and reopen same side in the next-month NATGASMINI contract.
-    Returns tradingsymbol to use after rollover (may be unchanged).
+    Simple rule:
+      - Day 1..20  -> choose current-month NATGASMINI
+      - Day 21..31 -> choose next-month NATGASMINI
+    Uses system date; selects first matching (year, month).
+    Falls back to nearest future (sorted by year,month) if an exact match is missing.
     """
-    dte = days_to_expiry_for_symbol(kite, exchange, cur_symbol)
-    if dte is None or dte > ROLLOVER_DAYS:
-        return cur_symbol
+    today = date.today()
+    target_year = today.year
+    target_month = today.month
 
-    qty = get_position_quantity(kite, exchange, cur_symbol)
-    if qty == 0:
-        return cur_symbol  # nothing to roll
+    # after 20th → target next month
+    if today.day >= 21:
+        if target_month == 12:
+            target_month = 1
+            target_year += 1
+        else:
+            target_month += 1
 
-    cur, nxt = find_current_and_next_natgasmini(kite)
-    if not nxt:
-        logging.warning("⚠️ No next-month NATGASMINI FUT available; cannot rollover.")
-        return cur_symbol
+    # try exact match first
+    matches = [f for f in futs if f["year"] == target_year and f["month"] == target_month]
+    if matches:
+        chosen = sorted(matches, key=lambda f: (f["year"], f["month"]))[0]
+        logging.info(f"📌 Day-20 rule pick → {chosen['tradingsymbol']} (target {target_year}-{target_month:02d})")
+        return chosen
 
-    side = "LONG" if qty > 0 else "SHORT"
-    logging.info(f"🔄 Rollover: {cur_symbol} (DTE={dte}) → {nxt['tradingsymbol']} side={side}")
-    exit_position(kite, exchange, cur_symbol, qty)
-    enter_position(kite, exchange, nxt["tradingsymbol"], side)
-    return nxt["tradingsymbol"]
+    # fallback: pick the nearest future >= target (else earliest available)
+    futs_sorted = sorted(futs, key=lambda f: (f["year"], f["month"]))
+    later = [f for f in futs_sorted if (f["year"], f["month"]) >= (target_year, target_month)]
+    chosen = later[0] if later else futs_sorted[0]
+    logging.info(f"📌 Day-20 rule fallback pick → {chosen['tradingsymbol']} (target {target_year}-{target_month:02d})")
+    return chosen
 
-# --- NATGAS detect (for alert symbol forms) ---
-_LETTER_MONTH = set("FGHJKMNQUVXZ")
-def looks_like_natgas_letter_year(s: str) -> bool:
-    s = s.split(":", 1)[-1]
-    m = re.search(r"NATGAS([A-Z])20\d{2}", s)
-    return bool(m and m.group(1) in _LETTER_MONTH)
-
-def is_natgas_continuous(s: str) -> bool:
-    s = s.split(":", 1)[-1]
-    return s.startswith("NATGAS1") or s.startswith("NATGASMINI1")
+def is_natgas_symbol(raw: str) -> bool:
+    s = (raw or "").upper()
+    if ":" in s:
+        s = s.split(":", 1)[-1]
+    return "NATGAS" in s
 
 # --------------------------------------------------------------------
-# Contract resolver with NEW-entry rollover routing
+# Contract resolver (simple 20th rule)
 # --------------------------------------------------------------------
 def get_active_contract(kite, tv_symbol_raw: str):
-    raw_upper = (tv_symbol_raw or "").upper().strip()
+    if not is_natgas_symbol(tv_symbol_raw):
+        logging.warning(f"⚠️ Unexpected symbol (not NATGAS*): {tv_symbol_raw}")
+        return None, None
 
-    if is_natgas_continuous(raw_upper) or looks_like_natgas_letter_year(raw_upper) or "NATGAS" in raw_upper:
-        exchange = "MCX"
-        cur, nxt = find_current_and_next_natgasmini(kite)
-        if not cur:
-            logging.error("❌ No active MCX FUT found for NATGASMINI (check token/API or instruments fetch)")
-            return None, None
+    futs = parse_natgasmini_contracts(kite)
+    if not futs:
+        return None, None
 
-        dte = days_to_expiry_for_symbol(kite, exchange, cur["tradingsymbol"])
-        if dte is not None and dte <= ROLLOVER_DAYS and nxt:
-            logging.info(f"📦 Routing NEW entries to next-month: {nxt['tradingsymbol']} (front DTE={dte}≤{ROLLOVER_DAYS})")
-            return exchange, nxt["tradingsymbol"]
-
-        logging.info(f"🟢 NATGAS alert mapped → {cur['tradingsymbol']}")
-        return exchange, cur["tradingsymbol"]
-
-    logging.warning(f"⚠️ Unexpected symbol (not NATGAS): {tv_symbol_raw}")
-    return None, None
+    chosen = choose_contract_by_day20_rule(futs)
+    return "MCX", chosen["tradingsymbol"]
 
 # --------------------------------------------------------------------
 # Order helpers
@@ -288,9 +238,6 @@ def get_position_quantity(kite, exchange, symbol):
 # Decision engine
 # --------------------------------------------------------------------
 def handle_trade_decision(kite, base_key, exchange, fut_symbol, new_signal):
-    # Rollover existing (if needed) before acting
-    fut_symbol = maybe_rollover_existing(kite, exchange, fut_symbol)
-
     qty = get_position_quantity(kite, exchange, fut_symbol)
     side = "LONG" if qty > 0 else ("SHORT" if qty < 0 else "FLAT")
 
