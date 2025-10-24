@@ -1,4 +1,4 @@
-print("🚀 Starting tradingview_zerodha_ver5_without_hedge — NATGASMINI-Only Mode with debug + 4-day rollover...")
+print("🚀 Starting tradingview_zerodha_ver5_without_hedge — NATGASMINI-Only Mode with debug + tolerant expiry + 4-day rollover...")
 
 from flask import Flask, request, jsonify
 from kiteconnect import KiteConnect
@@ -32,13 +32,6 @@ logging.basicConfig(
 # --------------------------------------------------------------------
 ALLOWED_TF = {"5m", "10m", "15m", "20m", "30m", "60m"}
 ROLLOVER_DAYS = 4  # rollover to next month when front-month DTE <= 4
-
-# For symbol normalization (kept for completeness)
-ALIAS_TO_CANON = {
-    "NATGAS": "NATGASMINI",
-    "NATGASMINI": "NATGASMINI",
-    "NATURALGAS": "NATGASMINI",
-}
 
 signals = {}
 lot_size_cache = {}
@@ -104,43 +97,64 @@ def expiry_date(i):
         return None
 
 def gas_futures_visible(kite):
-    """Return ALL gas futures instruments visible on MCX (for debug + matching)."""
+    """Return ALL NATGASMINI futures on MCX (for debug + matching)."""
     instr = load_instruments(kite, "MCX")
-    # 1) Strict target: NATGASMINI…FUT
     minis = [x for x in instr
              if x.get("instrument_type") == "FUT"
              and (x.get("tradingsymbol") or "").startswith("NATGASMINI")
              and (x.get("tradingsymbol") or "").endswith("FUT")]
-    # 2) Log a helpful snapshot
+    # Helpful snapshot
     also_gas = [x.get("tradingsymbol") for x in instr
                 if x.get("instrument_type") == "FUT"
                 and "NATGAS" in (x.get("tradingsymbol") or "")]
     logging.info(f"🧪 MCX GAS-like FUT visible: {also_gas[:20]}")
     return minis
 
-def sort_by_expiry(futs):
-    """Input: list of instrument dicts. Output: same list sorted by expiry asc, and filtered if no expiry."""
-    items = []
+def sort_by_expiry_or_symbol(futs):
+    """
+    Try to sort by expiry; if none have a valid expiry, fall back to
+    sorting by tradingsymbol (which is chronological for MCX FUTs).
+    """
+    with_exp = []
+    no_exp = []
     for x in futs:
         ed = expiry_date(x)
         if ed:
-            items.append((ed, x))
-    items.sort(key=lambda t: t[0])
-    return items
+            with_exp.append((ed, x))
+        else:
+            no_exp.append(x)
+
+    if with_exp:
+        with_exp.sort(key=lambda t: t[0])            # by expiry asc
+        ordered = [x for _, x in with_exp] + no_exp  # any no-exp at the end
+        return ordered
+
+    # Fallback: sort by symbol, e.g. NATGASMINI25OCTFUT < NATGASMINI25NOVFUT < ...
+    return sorted(no_exp, key=lambda x: x.get("tradingsymbol", ""))
 
 def find_current_and_next_natgasmini(kite):
-    """Return (current_front, next_month) NATGASMINI FUTs as dicts (or None)."""
+    """
+    Return (current_front, next_month) NATGASMINI FUTs as dicts.
+    Tolerant to missing expiry: falls back to symbol sort.
+    """
     minis = gas_futures_visible(kite)
-    items = sort_by_expiry(minis)
-    today = datetime.now().date()
-    live = [x for x in items if x[0] >= today]
-    if not live:
-        # if all expired (weird edge), fallback to all
-        live = items
-    if not live:
+    if not minis:
         return (None, None)
-    cur = live[0][1]
-    nxt = live[1][1] if len(live) > 1 else None
+
+    ordered = sort_by_expiry_or_symbol(minis)
+    today = datetime.now().date()
+
+    live = []
+    for x in ordered:
+        ed = expiry_date(x)
+        if ed is None or ed >= today:
+            live.append(x)
+
+    if not live:
+        live = ordered  # still use ordered list
+
+    cur = live[0]
+    nxt = live[1] if len(live) > 1 else None
     return cur, nxt
 
 def days_to_expiry_for_symbol(kite, exchange: str, tradingsymbol: str):
@@ -359,3 +373,4 @@ if __name__ == "__main__":
     print("✅ Flask running in NATGASMINI-Only mode at http://0.0.0.0:5000/webhook")
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
