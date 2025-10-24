@@ -1,4 +1,4 @@
-print("🚀 Starting tradingview_zerodha_ver5_without_hedge — NATGASMINI-Only Mode...")
+print("🚀 Starting tradingview_zerodha_ver5_without_hedge — NATGASMINI-Only Mode with 4-day rollover...")
 
 from flask import Flask, request, jsonify
 from kiteconnect import KiteConnect
@@ -30,28 +30,21 @@ logging.basicConfig(
 # --------------------------------------------------------------------
 # Config
 # --------------------------------------------------------------------
-# Allowed timeframes
 ALLOWED_TF = {"5m", "10m", "15m", "20m", "30m", "60m"}
-
-# Rollover: days before expiry to shift to next month
-ROLLOVER_DAYS = 4
-
-# Valid MCX roots (NATGASMINI for this project)
 MCX_CANONICAL_ROOTS = {"NATGASMINI"}
-
-# Alias mapping (to normalize incoming symbols)
 ALIAS_TO_CANON = {
     "NATGAS": "NATGASMINI",
     "NATGASMINI": "NATGASMINI",
-    "NATURALGAS": "NATGASMINI"  # in case older scripts send NATURALGAS
+    "NATURALGAS": "NATGASMINI"
 }
+ROLLOVER_DAYS = 4  # Auto-rollover 4 days before expiry
 
 signals = {}
 lot_size_cache = {}
 
 @app.route("/")
 def home():
-    return "✅ Botelyes Webhook — NATGASMINI-Only Mode is Running!"
+    return "✅ Botelyes Webhook — NATGASMINI-Only Mode with 4-day rollover!"
 
 # --------------------------------------------------------------------
 # Kite client
@@ -74,23 +67,17 @@ def normalize_timeframe(tf_in: str) -> str:
     s = (tf_in or "").strip().lower()
     s = s.replace("minutes", "m").replace("minute", "m").replace("mins", "m").replace("min", "m")
     s = s.replace(" ", "")
-    if re.fullmatch(r"\d+", s):
-        s = f"{s}m"
+    if re.fullmatch(r"\d+", s): s = f"{s}m"
     m = re.fullmatch(r"(\d+)h", s)
-    if m:
-        s = f"{int(m.group(1)) * 60}m"
-    if not s.endswith("m"):
-        s += "m"
-    if s == "1m0m":
-        s = "10m"
-    if s == "60m":
-        return "60m"
+    if m: s = f"{int(m.group(1))*60}m"
+    if not s.endswith("m"): s += "m"
+    if s == "1m0m": s = "10m"
+    if s == "60m": return "60m"
     return s
 
 def parse_tv_symbol(raw_symbol: str) -> str:
     s = (raw_symbol or "").upper().strip()
-    if ":" in s:
-        _, s = s.split(":", 1)
+    if ":" in s: _, s = s.split(":", 1)
     s = s.replace("1!", "").replace("2!", "").replace("3!", "").replace("!", "")
     s = re.sub(r"[^A-Z]", "", s)
     return ALIAS_TO_CANON.get(s, s)
@@ -104,26 +91,51 @@ def expiry_date(i):
     except Exception:
         return None
 
-def find_nearest_future(kite, exchange: str, root: str):
-    try:
-        instr = load_instruments(kite, exchange)
-        today = datetime.now().date()
-        cands = [
-            x for x in instr
-            if x.get("instrument_type") == "FUT"
-            and x.get("tradingsymbol", "").startswith(root)
-            and x.get("tradingsymbol", "").endswith("FUT")
-        ]
-        futs = [x for x in cands if expiry_date(x) and expiry_date(x) >= today]
-        if not futs:
-            futs = cands
-        futs.sort(key=lambda x: expiry_date(x) or today)
-        return futs[0] if futs else None
-    except Exception as e:
-        logging.error(f"❌ find_nearest_future error ({exchange}/{root}): {e}")
-        return None
+def find_all_futures(kite, exchange: str, root: str):
+    instr = load_instruments(kite, exchange)
+    futs = []
+    for x in instr:
+        ts = x.get("tradingsymbol", "")
+        if x.get("instrument_type") == "FUT" and ts.startswith(root) and ts.endswith("FUT"):
+            ed = expiry_date(x)
+            if ed:
+                futs.append((ed, x))
+    futs.sort(key=lambda t: t[0])
+    return futs
 
-# --- detect NATGAS forms like NATGASV2025 or NATGASX2025
+def days_to_expiry(kite, exchange, symbol):
+    instr = load_instruments(kite, exchange)
+    for x in instr:
+        if x["tradingsymbol"] == symbol:
+            ed = expiry_date(x)
+            if not ed:
+                return None
+            return (ed - datetime.now().date()).days
+    return None
+
+def maybe_rollover_existing(kite, exchange, root, symbol):
+    """If current month has <=4 days to expiry, close and reopen next-month FUT."""
+    dte = days_to_expiry(kite, exchange, symbol)
+    if dte is None or dte > ROLLOVER_DAYS:
+        return symbol
+
+    futs = find_all_futures(kite, exchange, root)
+    if len(futs) < 2:
+        logging.warning(f"⚠️ No next-month FUT found for {root}")
+        return symbol
+
+    next_symbol = futs[1][1]["tradingsymbol"]
+    qty = get_position_quantity(kite, exchange, symbol)
+    if qty == 0:
+        return next_symbol
+
+    side = "LONG" if qty > 0 else "SHORT"
+    logging.info(f"🔄 Rollover: {symbol} (DTE={dte}) → {next_symbol} ({side})")
+    exit_position(kite, exchange, symbol, qty)
+    enter_position(kite, exchange, next_symbol, side)
+    return next_symbol
+
+# --- NATGAS detect ---
 _LETTER_MONTH = set("FGHJKMNQUVXZ")
 def looks_like_natgas_letter_year(s: str) -> bool:
     s = s.split(":", 1)[-1]
@@ -134,100 +146,22 @@ def is_natgas_continuous(s: str) -> bool:
     s = s.split(":", 1)[-1]
     return s.startswith("NATGAS1") or s.startswith("NATGASMINI1")
 
-# ---- Rollover helpers ----
-def list_sorted_futures(kite, exchange: str, root: str):
-    """All FUTs for root, sorted by expiry ascending, only those with expiry."""
-    instr = load_instruments(kite, exchange)
-    futs = []
-    for x in instr:
-        if (
-            x.get("instrument_type") == "FUT"
-            and x.get("tradingsymbol", "").startswith(root)
-            and x.get("tradingsymbol", "").endswith("FUT")
-        ):
-            ed = expiry_date(x)
-            if ed:
-                futs.append((ed, x))
-    futs.sort(key=lambda t: t[0])
-    return futs
-
-def get_current_and_next_future(kite, exchange: str, root: str):
-    """Return (current_front, next_month) as dicts (or None)."""
-    today = datetime.now().date()
-    futs = list_sorted_futures(kite, exchange, root)
-    live = [x for x in futs if x[0] >= today]
-    if not live:
-        return (None, None)
-    cur = live[0][1]
-    nxt = live[1][1] if len(live) > 1 else None
-    return (cur, nxt)
-
-def days_to_expiry_for_symbol(kite, exchange: str, tradingsymbol: str):
-    """Return DTE (>=0) for symbol, or None if not found."""
-    instr = load_instruments(kite, exchange)
-    for x in instr:
-        if x.get("tradingsymbol") == tradingsymbol:
-            ed = expiry_date(x)
-            if not ed:
-                return None
-            return max(0, (ed - datetime.now().date()).days)
-    return None
-
-def maybe_rollover_existing(kite, exchange: str, root: str, cur_symbol: str):
-    """
-    If we already hold a position in cur_symbol and it expires in <= ROLLOVER_DAYS,
-    close it and reopen same side in the next-month contract.
-    Return tradingsymbol to use after rollover (may be unchanged).
-    """
-    days_left = days_to_expiry_for_symbol(kite, exchange, cur_symbol)
-    if days_left is None or days_left > ROLLOVER_DAYS:
-        return cur_symbol
-
-    qty = get_position_quantity(kite, exchange, cur_symbol)
-    if qty == 0:
-        return cur_symbol  # nothing to rollover
-
-    cur, nxt = get_current_and_next_future(kite, exchange, root)
-    if not nxt:
-        logging.warning(f"⚠️ No next-month FUT available for {root}; cannot rollover.")
-        return cur_symbol
-
-    side = "LONG" if qty > 0 else "SHORT"
-    logging.info(f"🔄 Rollover: {cur_symbol} (DTE={days_left}) → {nxt['tradingsymbol']} same side={side}")
-
-    # Close current, open next
-    exit_position(kite, exchange, cur_symbol, qty)
-    enter_position(kite, exchange, nxt["tradingsymbol"], side)
-    return nxt["tradingsymbol"]
-
-# --------------------------------------------------------------------
-# Contract resolver with NEW-entry rollover routing
-# --------------------------------------------------------------------
 def get_active_contract(kite, tv_symbol_raw: str):
     raw_upper = (tv_symbol_raw or "").upper().strip()
-
-    # --- NATGASMINI unified handling (we always trade mini) ---
     if is_natgas_continuous(raw_upper) or looks_like_natgas_letter_year(raw_upper) or "NATGAS" in raw_upper:
         exchange = "MCX"
         root = "NATGASMINI"
-
-        # Get front and next month
-        cur, nxt = get_current_and_next_future(kite, exchange, root)
-        if not cur:
+        futs = find_all_futures(kite, exchange, root)
+        if not futs:
             logging.error("❌ No active MCX FUT found for NATGASMINI")
             return None, None
-
-        # If front month is within ROLLOVER_DAYS, direct NEW entries to next-month
-        dte = days_to_expiry_for_symbol(kite, exchange, cur["tradingsymbol"])
-        if dte is not None and dte <= ROLLOVER_DAYS and nxt:
-            logging.info(f"📦 Routing NEW entries to next-month: {nxt['tradingsymbol']} (front DTE={dte}≤{ROLLOVER_DAYS})")
-            return exchange, nxt["tradingsymbol"]
-
-        logging.info(f"🟢 NATGAS alert mapped → {cur['tradingsymbol']}")
-        return exchange, cur["tradingsymbol"]
-
-    # default fallback (shouldn’t happen in NATGASMINI-only mode)
-    logging.warning(f"⚠️ Unexpected symbol: {tv_symbol_raw}")
+        cur_symbol = futs[0][1]["tradingsymbol"]
+        dte = (futs[0][0] - datetime.now().date()).days
+        if dte <= ROLLOVER_DAYS and len(futs) > 1:
+            logging.info(f"📦 New entries → next FUT since DTE={dte}≤{ROLLOVER_DAYS}")
+            cur_symbol = futs[1][1]["tradingsymbol"]
+        logging.info(f"🟢 NATGAS alert mapped → {cur_symbol}")
+        return exchange, cur_symbol
     return None, None
 
 # --------------------------------------------------------------------
@@ -235,8 +169,7 @@ def get_active_contract(kite, tv_symbol_raw: str):
 # --------------------------------------------------------------------
 def get_lot_size(kite, exchange: str, tradingsymbol: str) -> int:
     key = f"{exchange}:{tradingsymbol}"
-    if key in lot_size_cache:
-        return lot_size_cache[key]
+    if key in lot_size_cache: return lot_size_cache[key]
     try:
         instr = load_instruments(kite, exchange)
         for x in instr:
@@ -244,10 +177,8 @@ def get_lot_size(kite, exchange: str, tradingsymbol: str) -> int:
                 lot = int(x.get("lot_size", 1))
                 lot_size_cache[key] = lot
                 return lot
-        logging.warning(f"⚠️ Lot size not found for {tradingsymbol}, default=1")
         return 1
-    except Exception as e:
-        logging.error(f"❌ Lot size error: {e}")
+    except Exception:
         return 1
 
 def enter_position(kite, exchange, fut_symbol, side):
@@ -294,6 +225,9 @@ def handle_trade_decision(kite, base_key, exchange, fut_symbol, new_signal):
     qty = get_position_quantity(kite, exchange, fut_symbol)
     side = "LONG" if qty > 0 else ("SHORT" if qty < 0 else "FLAT")
 
+    # Auto-rollover if needed
+    fut_symbol = maybe_rollover_existing(kite, exchange, "NATGASMINI", fut_symbol)
+
     if (side == "LONG" and new_signal == "LONG") or (side == "SHORT" and new_signal == "SHORT"):
         logging.info(f"🟡 No-op: already {side} on {fut_symbol}")
         signals[base_key]["last_action"] = new_signal
@@ -317,18 +251,13 @@ def webhook():
         signal_in = (data.get("signal", "") or "").upper()
         timeframe_in = (data.get("timeframe", "") or "")
 
-        # --- Safety filter: trade only NATGASMINI ---
         if "NATGAS" not in raw_symbol.upper():
             logging.info(f"🚫 Ignored non-NATGAS symbol: {raw_symbol}")
             return jsonify({"status": "🚫 Ignored — not NATGASMINI", "symbol": raw_symbol})
 
-        # Normalize signal
-        if signal_in == "BUY":
-            signal = "LONG"
-        elif signal_in == "SELL":
-            signal = "SHORT"
-        else:
-            signal = signal_in
+        if signal_in == "BUY": signal = "LONG"
+        elif signal_in == "SELL": signal = "SHORT"
+        else: signal = signal_in
         if signal not in {"LONG", "SHORT"}:
             return jsonify({"status": "⚠️ Ignored bad signal", "got": signal_in})
 
@@ -345,22 +274,14 @@ def webhook():
         if not exchange or not fut_symbol:
             return jsonify({"status": "❌ Active future not found", "symbol": raw_symbol})
 
-        # 🔄 Auto-rollover existing positions if front-month is within ROLLOVER_DAYS
-        fut_symbol = maybe_rollover_existing(kite, exchange, "NATGASMINI", fut_symbol)
-
         if base_key not in signals:
             signals[base_key] = {"tf": {}, "last_action": "NONE"}
 
         signals[base_key]["tf"][tf] = signal
         handle_trade_decision(kite, base_key, exchange, fut_symbol, signal)
 
-        return jsonify({
-            "status": "✅ processed",
-            "exchange": exchange,
-            "fut": fut_symbol,
-            "signal": signal,
-            "tf": tf
-        })
+        return jsonify({"status": "✅ processed", "exchange": exchange,
+                        "fut": fut_symbol, "signal": signal, "tf": tf})
 
     except Exception as e:
         logging.exception("webhook error")
@@ -372,6 +293,6 @@ def webhook():
 if __name__ == "__main__":
     print("📅 Start Time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     print("📂 Directory:", os.getcwd())
-    print("✅ Flask running in NATGASMINI-Only mode at http://0.0.0.0:5000/webhook")
+    print("✅ Flask running in NATGASMINI-Only mode with 4-day rollover at http://0.0.0.0:5000/webhook")
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
